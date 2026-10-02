@@ -1,0 +1,18 @@
+[project]
+name = "pipeline-data-ci"
+version = "1.0.0"
+description = "Pipeline data CSV -> traitement -> base relationnelle, avec intégration continue"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-v"
+
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F"]
