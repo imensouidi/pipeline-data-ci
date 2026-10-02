@@ -68,7 +68,7 @@ def _generer_lignes(rng: random.Random, nb: int, depart: datetime) -> tuple[list
                 "banque_source": origine.banque,
                 "iban_destinataire": destinataire.iban,
                 "pays_destinataire": destinataire.pays,
-                "montant": f"{montant:.2f}",
+                "montant": f"{montant:.2f}".replace(".", ","),
             }
         )
     return lignes, horodatage
