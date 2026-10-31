@@ -98,9 +98,9 @@ terraform destroy
 ## CI/CD
 
 - `.github/workflows/ci.yml` : à chaque push et pull request, vérifie le code (ruff), exécute la pipeline en local, construit l'image Docker et lance les tests.
-- `.github/workflows/cd.yml` : à chaque push sur `main`, publie l'image sur Docker Hub, puis déploie l'infrastructure Azure avec Terraform.
+- `.github/workflows/cd.yml` : à chaque push sur `main`, construit l'image Docker et la publie sur Docker Hub. Le déploiement Azure reste manuel (`terraform apply`), car l'abonnement étudiant ne permet pas de créer l'identité nécessaire à GitHub.
 
-Secrets GitHub nécessaires pour le CD : `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `AZURE_CREDENTIALS`, `AZURE_SUBSCRIPTION_ID`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`.
+Secrets GitHub nécessaires pour le CD : `DOCKERHUB_USERNAME` et `DOCKERHUB_TOKEN`.
 
 ## Scénario d'échec et retry
 
