@@ -102,6 +102,52 @@ terraform destroy
 
 Secrets GitHub nécessaires pour le CD : `DOCKERHUB_USERNAME` et `DOCKERHUB_TOKEN`.
 
-## Scénario d'échec et retry
+## Démonstration (étapes 6 et 7)
 
-Voir le rapport (captures d'écran) pour la démonstration complète : CSV invalide, puis correction ; pannes temporaires à l'insertion et au téléchargement S3.
+Les captures sont dans le dossier `docs/`. Commandes en mode local (`--local`), dans un environnement où `.venv` est activé.
+
+### Étape 6 : échec de la pipeline et correction
+
+**Cause** : le fichier `transactions_s42_001.csv` contient un montant écrit avec une virgule (`12,50`) au lieu d'un point (`12.50`). Le format attendu est un nombre décimal.
+
+**Échec** (`docs/capture1.png`) :
+
+```bash
+python -m pipeline --local --data-dir data_ko --db-path output/ko.db --n-files 5 --seed 42 --inject-invalid
+```
+
+La pipeline s'arrête avant toute insertion en base, avec le message :
+
+```
+ÉCHEC - donnée invalide : transactions_s42_001.csv, ligne 11, colonne 'montant' : nombre décimal attendu (ex : 1234.56) (valeur reçue : '12,50')
+```
+
+Le code de sortie est `1`.
+
+**Correction** : régénérer les fichiers avec un montant au bon format (le point remplace la virgule). Sans `--inject-invalid`, la génération écrit des montants valides.
+
+**Réussite après correction** (`docs/capture2.png`) :
+
+```bash
+python -m pipeline --local --data-dir data_ko --db-path output/ko.db --n-files 5 --seed 42
+```
+
+Les 5 fichiers sont traités et insérés (`fichiers_inseres=5`, 42 transactions), code de sortie `0`.
+
+### Étape 7 : retry lors de l'insertion
+
+Le retry réessaie l'insertion en cas d'erreur temporaire (`database is locked`), avec un délai qui double à chaque tentative (0,1 s, puis 0,2 s). La panne est simulée avec `--simulate-db-failures`, et le nombre de tentatives est fixé par `--max-retries`.
+
+**Retry qui réussit** (`docs/capture3.png`) : deux pannes, succès à la 3e tentative.
+
+```bash
+python -m pipeline --local --data-dir test_retry/data_ok --db-path test_retry/ok.db --n-files 2 --simulate-db-failures 2 --retry-delay 0.1
+```
+
+**Retry qui abandonne** (`docs/capture4.png`) : cinq pannes pour trois tentatives. La pipeline s'arrête proprement avec le code `2`.
+
+```bash
+python -m pipeline --local --data-dir test_retry/data_ko --db-path test_retry/ko.db --n-files 2 --simulate-db-failures 5 --max-retries 3 --retry-delay 0.1
+```
+
+**Anti-doublon** : chaque fichier est identifié par son hash SHA-256 dans la table `processed_files`. L'insertion d'un fichier est atomique : en cas de panne, tout est annulé, donc un retry ne crée jamais de doublon.
