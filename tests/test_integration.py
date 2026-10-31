@@ -90,8 +90,8 @@ def test_donnee_invalide_arrete_la_pipeline_sans_insertion(tmp_path, chemin_bdd)
 
 
 def test_code_retour_cli(tmp_path):
-    base = ["--data-dir", str(tmp_path / "data"), "--db-path", str(tmp_path / "cli.db")]
+    base = ["--local", "--data-dir", str(tmp_path / "data"), "--db-path", str(tmp_path / "cli.db")]
     assert main(base) == 0
-    assert main(["--data-dir", str(tmp_path / "ko"), "--db-path", str(tmp_path / "ko.db"),
+    assert main(["--local", "--data-dir", str(tmp_path / "ko"), "--db-path", str(tmp_path / "ko.db"),
                  "--inject-invalid"]) == 1
     

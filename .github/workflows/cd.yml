@@ -1,0 +1,48 @@
+name: CD - Déploiement sur Azure
+
+# Déploiement automatique à chaque push sur main (après la CI).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    needs: []
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Connexion à Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construction et publication de l'image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/pipeline-data:latest
+
+      - name: Installation de Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Connexion à Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Déploiement de l'infrastructure (Terraform)
+        working-directory: infra
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_pipeline_image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/pipeline-data:latest
+          TF_VAR_s3_access_key: ${{ secrets.S3_ACCESS_KEY }}
+          TF_VAR_s3_secret_key: ${{ secrets.S3_SECRET_KEY }}
+        run: |
+          terraform init
+          terraform apply -auto-approve

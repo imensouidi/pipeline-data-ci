@@ -1,0 +1,6 @@
+# Copier ce fichier en terraform.tfvars et remplir les valeurs.
+# terraform.tfvars contient des secrets : il ne doit JAMAIS être poussé sur GitHub.
+subscription_id = "4561bf26-46f1-468f-ad2f-cb9dd0695251"
+pipeline_image  = "docker.io/MON_COMPTE_DOCKERHUB/pipeline-data:latest"
+s3_access_key   = "admin"
+s3_secret_key   = "admin"

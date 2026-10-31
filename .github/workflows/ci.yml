@@ -26,10 +26,13 @@ jobs:
         run: ruff check .
 
       - name: Exécution de la pipeline complète
-        run: python -m pipeline --n-files 5 --seed 42
+        run: python -m pipeline --local --n-files 5 --seed 42
 
       - name: Relance de la pipeline (vérification anti-doublons)
-        run: python -m pipeline --n-files 5 --seed 42
+        run: python -m pipeline --local --n-files 5 --seed 42
+
+      - name: Construction de l'image Docker
+        run: docker build -t pipeline-data .
 
       - name: Tests d'intégration
         run: python -m pytest
