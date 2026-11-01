@@ -28,6 +28,7 @@ from pipeline.retry import RetryEpuiseError, SimulateurPanneBDD, executer_avec_r
 from pipeline.s3 import (
     ERREURS_S3_TEMPORAIRES,
     SimulateurPanneS3,
+    attendre_service_s3,
     client_depuis_environnement,
     configurer_bucket,
     envoyer_fichiers,
@@ -97,6 +98,9 @@ def executer_pipeline(
     pannes_s3_simulees: int = 0,
 ) -> RapportPipeline:
     rapport = RapportPipeline()
+
+    if client_s3 is not None:
+        attendre_service_s3(client_s3)
 
     logger.info("=== Étape 1/4 : génération des fichiers CSV ===")
     if generer:

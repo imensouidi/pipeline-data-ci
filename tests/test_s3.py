@@ -7,6 +7,8 @@ from pipeline.main import executer_pipeline
 from pipeline.retry import RetryEpuiseError
 from pipeline.s3 import (
     FichierS3Manquant,
+    ServiceS3Indisponible,
+    attendre_service_s3,
     configurer_bucket,
     creer_client,
     envoyer_fichiers,
@@ -91,3 +93,13 @@ def test_relance_s3_pas_de_doublon(s3, dossier_connu, tmp_path, requete, chemin_
     assert rapport.fichiers_inseres == 0
     assert rapport.fichiers_ignores == 2
     assert requete("SELECT COUNT(*) FROM transactions") == [(NB_TRANSACTIONS,)]
+
+
+def test_attente_service_s3_prêt_immédiatement(s3):
+    attendre_service_s3(s3, timeout=5, sleep=lambda _: None)  # ne lève rien
+
+
+def test_attente_service_s3_injoignable_échoue_proprement():
+    client = creer_client("http://127.0.0.1:1", "test", "test")  # rien n'écoute sur ce port
+    with pytest.raises(ServiceS3Indisponible):
+        attendre_service_s3(client, timeout=2, intervalle=1, sleep=lambda _: None)

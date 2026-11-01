@@ -68,6 +68,8 @@ docker compose up --build
 
 Lance SeaweedFS (port 8333) et la pipeline, qui tourne toutes les 5 minutes.
 
+Le conteneur S3 est démarré en premier par Compose. Avant la première étape, la pipeline attend que le service S3 réponde (jusqu'à 60 s) et échoue proprement s'il reste injoignable.
+
 ## Déploiement sur Azure (Terraform)
 
 Prérequis : Azure CLI, Terraform, un compte Docker Hub, et un abonnement Azure.

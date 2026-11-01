@@ -121,3 +121,28 @@ class SimulateurPanneS3:
         if self.pannes_restantes > 0:
             self.pannes_restantes -= 1
             raise EndpointConnectionError(endpoint_url=self.endpoint)
+
+
+def attendre_service_s3(client, timeout: float = 60.0, intervalle: float = 2.0, sleep=None) -> None:
+    """Attend que le service S3 réponde avant de lancer la pipeline.
+
+    Le conteneur S3 est lancé par docker compose ; la pipeline vérifie qu'il est prêt
+    avant la première étape, et échoue proprement s'il ne répond pas dans le délai.
+    """
+    import time
+
+    sleep = sleep or time.sleep
+    ecoule = 0.0
+    while True:
+        try:
+            client.list_buckets()
+            logger.info("Service S3 prêt.")
+            return
+        except (EndpointConnectionError, ConnectTimeoutError, ReadTimeoutError) as erreur:
+            if ecoule >= timeout:
+                raise ServiceS3Indisponible(
+                    f"service S3 injoignable après {timeout:.0f} s : {erreur}"
+                ) from erreur
+            logger.info("Attente du service S3 (%.0f s)...", ecoule)
+            sleep(intervalle)
+            ecoule += intervalle
