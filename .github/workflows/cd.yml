@@ -1,7 +1,6 @@
-name: CD - Publication de l'image
+name: CD - Publication et déploiement
 
-# À chaque push sur main (après la CI) : construit l'image Docker et la publie sur Docker Hub.
-# Le déploiement Azure (Terraform) reste manuel : voir README.md, section "Déploiement sur Azure".
+# À chaque push sur main : publie l'image sur Docker Hub, puis déploie sur la VM.
 on:
   push:
     branches: [main]
@@ -10,7 +9,6 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
       - name: Récupération du code
         uses: actions/checkout@v4
@@ -27,3 +25,32 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/pipeline-data:latest
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Copie du fichier compose sur la VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          source: "docker-compose.vm.yml"
+          target: "/home/ubuntu/pipeline-data"
+
+      - name: Mise à jour et relance des conteneurs sur la VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/pipeline-data
+            mv -f docker-compose.vm.yml docker-compose.yml
+            docker compose pull
+            docker compose up -d
+            docker compose ps

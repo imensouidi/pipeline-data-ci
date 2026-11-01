@@ -1,0 +1,29 @@
+# Compose utilisé sur la VM : l'image est tirée de Docker Hub (pas de build sur la VM).
+name: pipeline-data
+
+services:
+  s3:
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -s3.port=8333 -dir=/data
+    ports:
+      - "8333:8333"
+    volumes:
+      - s3data:/data
+    restart: unless-stopped
+
+  pipeline:
+    image: imensouidi/pipeline-data:latest
+    depends_on:
+      - s3
+    environment:
+      S3_ENDPOINT: http://s3:8333
+      S3_ACCESS_KEY: admin
+      S3_SECRET_KEY: admin
+    command: ["python", "-m", "pipeline", "--n-files", "5", "--seed", "42", "--every", "300"]
+    volumes:
+      - pipelinedata:/app/output
+    restart: unless-stopped
+
+volumes:
+  s3data:
+  pipelinedata:
