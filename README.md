@@ -112,11 +112,11 @@ Les captures sont dans le dossier `docs/`. Commandes en mode local (`--local`), 
 
 **Échec** (`docs/capture1.png`) :
 
-![Capture 1 : échec de la pipeline](docs/capture1.png)
-
 ```bash
 python -m pipeline --local --data-dir data_ko --db-path output/ko.db --n-files 5 --seed 42 --inject-invalid
 ```
+
+![Capture 1 : échec de la pipeline](docs/capture1.png)
 
 La pipeline s'arrête avant toute insertion en base, avec le message :
 
@@ -130,11 +130,11 @@ Le code de sortie est `1`.
 
 **Réussite après correction** (`docs/capture2.png`) :
 
-![Capture 2 : correction et réussite](docs/capture2.png)
-
 ```bash
 python -m pipeline --local --data-dir data_ko --db-path output/ko.db --n-files 5 --seed 42
 ```
+
+![Capture 2 : correction et réussite](docs/capture2.png)
 
 Les 5 fichiers sont traités et insérés (`fichiers_inseres=5`, 42 transactions), code de sortie `0`.
 
@@ -144,18 +144,31 @@ Le retry réessaie l'insertion en cas d'erreur temporaire (`database is locked`)
 
 **Retry qui réussit** (`docs/capture3.png`) : deux pannes, succès à la 3e tentative.
 
-![Capture 3 : retry qui réussit](docs/capture3.png)
-
 ```bash
 python -m pipeline --local --data-dir test_retry/data_ok --db-path test_retry/ok.db --n-files 2 --simulate-db-failures 2 --retry-delay 0.1
 ```
 
-**Retry qui abandonne** (`docs/capture4.png`) : cinq pannes pour trois tentatives. La pipeline s'arrête proprement avec le code `2`.
+![Capture 3 : retry qui réussit](docs/capture3.png)
 
-![Capture 4 : retry qui abandonne](docs/capture4.png)
+**Retry qui abandonne** (`docs/capture4.png`) : cinq pannes pour trois tentatives. La pipeline s'arrête proprement avec le code `2`.
 
 ```bash
 python -m pipeline --local --data-dir test_retry/data_ko --db-path test_retry/ko.db --n-files 2 --simulate-db-failures 5 --max-retries 3 --retry-delay 0.1
 ```
 
-**Anti-doublon** : chaque fichier est identifié par son hash SHA-256 dans la table `processed_files`. L'insertion d'un fichier est atomique : en cas de panne, tout est annulé, donc un retry ne crée jamais de doublon.
+![Capture 4 : retry qui abandonne](docs/capture4.png)
+
+### Niveau 2 : retry lors de la récupération depuis S3
+
+Les fichiers sont envoyés dans le bucket S3, puis téléchargés avec retry. Deux pannes sont simulées (`--simulate-s3-failures 2`) : la pipeline réessaie avec un délai et réussit à la 3e tentative. Le service S3 doit tourner (`docker compose up -d s3`).
+
+```powershell
+$env:S3_ENDPOINT="http://localhost:8333"
+python -m pipeline --n-files 2 --simulate-s3-failures 2 --retry-delay 0.1
+```
+
+![Capture 5 : retry S3 qui réussit](docs/capture5.png)
+
+### Anti-doublon
+
+Chaque fichier est identifié par son hash SHA-256 dans la table `processed_files`. L'insertion d'un fichier est atomique : en cas de panne, tout est annulé, donc un retry ne crée jamais de doublon.
