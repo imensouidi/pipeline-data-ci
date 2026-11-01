@@ -68,7 +68,7 @@ docker compose up --build
 
 Lance SeaweedFS (port 8333) et la pipeline, qui tourne toutes les 5 minutes.
 
-## Déploiement sur Azure
+## Déploiement sur Azure (Terraform)
 
 Prérequis : Azure CLI, Terraform, un compte Docker Hub, et un abonnement Azure.
 
@@ -98,9 +98,36 @@ terraform destroy
 ## CI/CD
 
 - `.github/workflows/ci.yml` : à chaque push et pull request, vérifie le code (ruff), exécute la pipeline en local, construit l'image Docker et lance les tests.
-- `.github/workflows/cd.yml` : à chaque push sur `main`, construit l'image Docker et la publie sur Docker Hub. Le déploiement Azure reste manuel (`terraform apply`), car l'abonnement étudiant ne permet pas de créer l'identité nécessaire à GitHub.
+- `.github/workflows/cd.yml` : à chaque push sur `main`, publie l'image sur Docker Hub (job `publish`), puis déploie sur la VM en SSH (job `deploy`) : copie `docker-compose.vm.yml`, tire la nouvelle image et relance les conteneurs.
 
-Secrets GitHub nécessaires pour le CD : `DOCKERHUB_USERNAME` et `DOCKERHUB_TOKEN`.
+Secrets GitHub nécessaires :
+
+| Secret | Rôle |
+|---|---|
+| `DOCKERHUB_USERNAME` | nom d'utilisateur Docker Hub |
+| `DOCKERHUB_TOKEN` | token Docker Hub (lecture/écriture) |
+| `VM_HOST` | adresse IP de la VM |
+| `VM_USER` | utilisateur SSH de la VM |
+| `VM_SSH_KEY` | clé SSH privée (la clé publique est ajoutée sur la VM) |
+
+## Déploiement sur la VM (niveau 3, option 1)
+
+L'environnement de production tourne sur une machine virtuelle, dans des conteneurs Docker :
+
+- `s3` : SeaweedFS, le service S3 ;
+- `pipeline` : la pipeline, qui relance le traitement toutes les 5 minutes (`--every 300`) et stocke sa base SQLite dans un volume Docker.
+
+Le fichier `docker-compose.vm.yml` décrit cet environnement. Il utilise l'image publiée sur Docker Hub, sans build sur la VM.
+
+Vérifier l'environnement déployé :
+
+```bash
+ssh -i <clé_privée> ubuntu@<ip_vm> "cd pipeline-data && docker compose ps && docker compose logs --tail 20 pipeline"
+```
+
+## Déploiement d'infrastructure (niveau 3, option 4)
+
+Le dossier `infra/` décrit avec Terraform les ressources Azure (groupe de ressources et groupe de conteneurs). Il est appliqué à la main avec `terraform apply`, car le compte étudiant ne permet pas de créer l'identité nécessaire à GitHub pour un déploiement automatique vers Azure.
 
 ## Démonstration (étapes 6 et 7)
 
