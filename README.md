@@ -112,6 +112,8 @@ Les captures sont dans le dossier `docs/`. Commandes en mode local (`--local`), 
 
 **Échec** (`docs/capture1.png`) :
 
+![Capture 1 : échec de la pipeline](docs/capture1.png)
+
 ```bash
 python -m pipeline --local --data-dir data_ko --db-path output/ko.db --n-files 5 --seed 42 --inject-invalid
 ```
@@ -128,6 +130,8 @@ Le code de sortie est `1`.
 
 **Réussite après correction** (`docs/capture2.png`) :
 
+![Capture 2 : correction et réussite](docs/capture2.png)
+
 ```bash
 python -m pipeline --local --data-dir data_ko --db-path output/ko.db --n-files 5 --seed 42
 ```
@@ -140,11 +144,15 @@ Le retry réessaie l'insertion en cas d'erreur temporaire (`database is locked`)
 
 **Retry qui réussit** (`docs/capture3.png`) : deux pannes, succès à la 3e tentative.
 
+![Capture 3 : retry qui réussit](docs/capture3.png)
+
 ```bash
 python -m pipeline --local --data-dir test_retry/data_ok --db-path test_retry/ok.db --n-files 2 --simulate-db-failures 2 --retry-delay 0.1
 ```
 
 **Retry qui abandonne** (`docs/capture4.png`) : cinq pannes pour trois tentatives. La pipeline s'arrête proprement avec le code `2`.
+
+![Capture 4 : retry qui abandonne](docs/capture4.png)
 
 ```bash
 python -m pipeline --local --data-dir test_retry/data_ko --db-path test_retry/ko.db --n-files 2 --simulate-db-failures 5 --max-retries 3 --retry-delay 0.1
